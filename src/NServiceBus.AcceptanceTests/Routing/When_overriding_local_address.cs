@@ -1,10 +1,12 @@
-﻿namespace NServiceBus.AcceptanceTests
+﻿namespace ServiceBus.AcceptanceTests.Routing
 {
     using System.Threading.Tasks;
-    using AcceptanceTesting;
-    using AcceptanceTesting.Customization;
-    using NServiceBus.Routing;
+    using NServiceBus;
+    using NServiceBus.AcceptanceTesting;
+    using NServiceBus.AcceptanceTests;
+    using NServiceBus.AcceptanceTests.EndpointTemplates;
     using NUnit.Framework;
+    using Conventions = NServiceBus.AcceptanceTesting.Customization.Conventions;
 
     public class When_overriding_local_address : NServiceBusAcceptanceTest
     {
@@ -12,10 +14,15 @@
         public static string ReceiverQueueName => "q_" + ReceiverEndpointName;
 
         [Test]
-        public async Task Should_use_provided_instance_mapping()
+        public async Task Should_use_the_provided_address_as_input_queue_name()
         {
             var context = await Scenario.Define<Context>()
-                .WithEndpoint<Sender>(e => e.When(c => c.Send(new Message())))
+                .WithEndpoint<Sender>(e => e.When(c =>
+                {
+                    var options = new SendOptions();
+                    options.SetDestination(ReceiverQueueName);
+                    return c.Send(new Message(), options);
+                }))
                 .WithEndpoint<Receiver>()
                 .Done(c => c.ReceivedMessage)
                 .Run();
@@ -34,13 +41,6 @@
             {
                 EndpointSetup<DefaultServer>(c =>
                 {
-                    var transport = c.UseTransport<MsmqTransport>();
-                    var routing = transport.Routing();
-
-                    // only configure logical endpoint in routing
-                    routing.RouteToEndpoint(typeof(Message), ReceiverEndpointName);
-                    
-                    routing.AddEndpointInstances(new EndpointInstance(ReceiverEndpointName).WithQueue(ReceiverQueueName));
                 });
             }
         }

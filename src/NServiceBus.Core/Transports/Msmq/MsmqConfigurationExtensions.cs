@@ -4,6 +4,7 @@ namespace NServiceBus
     using System.Collections.Generic;
     using System.Messaging;
     using System.Transactions;
+    using Features;
     using Routing;
 
     /// <summary>
@@ -62,14 +63,14 @@ namespace NServiceBus
         }
 
         /// <summary>
-        /// Overrides the default address translation rule "endpoint.quailfier-id@machine".
+        /// Registers the provided endpoint instances in the routing system.
         /// </summary>
         /// <param name="config">Config object.</param>
-        /// <param name="translationRule">New translation rule.</param>
-        public static TransportExtensions<MsmqTransport> OverrideAddressTranslation(this TransportExtensions<MsmqTransport> config, Func<LogicalAddress, string> translationRule)
+        /// <param name="instances">A list of endpoint instances.</param>
+        public static void AddEndpointInstances(this RoutingSettings<MsmqTransport> config, params EndpointInstance[] instances)
         {
-            config.Settings.Set("NServiceBus.Transports.MSMQ.AddressTranslationRule", translationRule);
-            return config;
+            config.Settings.EnableFeature(typeof(ConfiguredEndpointInstancesFeature));
+            config.Settings.GetOrCreate<ConfiguredEndpointInstances>().AddRange(instances);
         }
     }
 }

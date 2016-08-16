@@ -1,7 +1,7 @@
 ﻿namespace NServiceBus
 {
     using System;
-    using JetBrains.Annotations;
+    using System.Collections.Generic;
     using Routing;
 
     /// <summary>
@@ -10,28 +10,66 @@
     public struct LogicalAddress
     {
         /// <summary>
-        /// Creates new qualified logical address for the provided endpoint instance name.
+        /// Creates new root logical address for the provided endpoint instance name.
         /// </summary>
         /// <param name="endpointInstance">The name of the instance.</param>
-        /// <param name="qualifier">The qualifier of this address.</param>
-        public LogicalAddress(EndpointInstance endpointInstance, [NotNull] string qualifier)
+        public LogicalAddress(EndpointInstance endpointInstance)
+            : this(endpointInstance, null)
         {
-            if (qualifier == null)
-            {
-                throw new ArgumentNullException(nameof(qualifier));
-            }
-            EndpointInstance = endpointInstance;
-            Qualifier = qualifier;
         }
 
         /// <summary>
         /// Creates new root logical address for the provided endpoint instance name.
         /// </summary>
-        /// <param name="endpointInstance">The name of the instance.</param>
-        public LogicalAddress(EndpointInstance endpointInstance)
+        /// <param name="queueName">Name of the queue.</param>
+        /// <param name="discriminator">Discriminator for the queue.</param>
+        /// <param name="properties">Properties.</param>
+        public LogicalAddress(string queueName, string discriminator, IReadOnlyDictionary<string, string> properties)
+            : this(new EndpointInstance(queueName, discriminator, properties))
+        {
+        }
+
+        LogicalAddress(EndpointInstance endpointInstance, string qualifier)
         {
             EndpointInstance = endpointInstance;
-            Qualifier = null;
+            Qualifier = qualifier;
+        }
+
+        /// <summary>
+        /// Creates an address scoped inside this one.
+        /// </summary>
+        /// <param name="qualifier">The qualifier for the new address.</param>
+        public LogicalAddress CreateSubscope(string qualifier)
+        {
+            Guard.AgainstNullAndEmpty(nameof(qualifier), qualifier);
+            if (Qualifier != null)
+            {
+                throw new Exception("Cannot create nested address scopes.");
+            }
+            if (EndpointInstance.Discriminator != null)
+            {
+                throw new Exception("Cannot create a subscope of an individualized address.");
+            }
+            return new LogicalAddress(EndpointInstance, qualifier);
+        }
+
+
+        /// <summary>
+        /// Creates a new endpoint instance with specified discriminator.
+        /// </summary>
+        /// <param name="discriminator">New discriminator value.</param>
+        public LogicalAddress CreateIndividualized(string discriminator)
+        {
+            Guard.AgainstNullAndEmpty(nameof(discriminator), discriminator);
+            if (EndpointInstance.Discriminator != null)
+            {
+                throw new Exception("Cannot individualize an individualized address.");
+            }
+            if (Qualifier != null)
+            {
+                throw new Exception("Cannot individualize a subscoped address.");
+            }
+            return new LogicalAddress(EndpointInstance.Endpoint, discriminator, EndpointInstance.Properties);
         }
 
         /// <summary>

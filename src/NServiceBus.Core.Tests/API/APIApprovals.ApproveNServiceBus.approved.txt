@@ -374,6 +374,7 @@ namespace NServiceBus
     public class static EndpointInstanceExtensions
     {
         public static NServiceBus.Routing.EndpointInstance AtMachine(this NServiceBus.Routing.EndpointInstance instance, string machineName) { }
+        public static NServiceBus.Routing.EndpointInstance WithQueue(this NServiceBus.Routing.EndpointInstance instance, string queueName) { }
     }
     public class static ErrorQueueSettings
     {
@@ -749,10 +750,12 @@ namespace NServiceBus
     public class static LoadMessageHandlersExtentions { }
     public struct LogicalAddress
     {
-        public LogicalAddress(NServiceBus.Routing.EndpointInstance endpointInstance, [JetBrains.Annotations.NotNullAttribute()] string qualifier) { }
         public LogicalAddress(NServiceBus.Routing.EndpointInstance endpointInstance) { }
+        public LogicalAddress(string queueName, string discriminator, System.Collections.Generic.IReadOnlyDictionary<string, string> properties) { }
         public NServiceBus.Routing.EndpointInstance EndpointInstance { get; }
         public string Qualifier { get; }
+        public NServiceBus.LogicalAddress CreateIndividualized(string discriminator) { }
+        public NServiceBus.LogicalAddress CreateSubscope(string qualifier) { }
         public override bool Equals(object obj) { }
         public override int GetHashCode() { }
         public override string ToString() { }
@@ -797,9 +800,9 @@ namespace NServiceBus
     }
     public class static MsmqConfigurationExtensions
     {
+        public static void AddEndpointInstances(this NServiceBus.RoutingSettings<NServiceBus.MsmqTransport> config, params NServiceBus.Routing.EndpointInstance[] instances) { }
         public static NServiceBus.TransportExtensions<NServiceBus.MsmqTransport> ApplyLabelToMessages(this NServiceBus.TransportExtensions<NServiceBus.MsmqTransport> transportExtensions, System.Func<System.Collections.Generic.IReadOnlyDictionary<string, string>, string> labelGenerator) { }
         public static NServiceBus.InstanceMappingFileSettings InstanceMappingFile(this NServiceBus.RoutingSettings<NServiceBus.MsmqTransport> config) { }
-        public static NServiceBus.TransportExtensions<NServiceBus.MsmqTransport> OverrideAddressTranslation(this NServiceBus.TransportExtensions<NServiceBus.MsmqTransport> config, System.Func<NServiceBus.LogicalAddress, string> translationRule) { }
         public static void SetMessageDistributionStrategy(this NServiceBus.RoutingSettings<NServiceBus.MsmqTransport> config, string endpointName, NServiceBus.Routing.DistributionStrategy distributionStrategy) { }
         public static NServiceBus.TransportExtensions<NServiceBus.MsmqTransport> TransactionScopeOptions(this NServiceBus.TransportExtensions<NServiceBus.MsmqTransport> transportExtensions, System.Nullable<System.TimeSpan> timeout = null, System.Nullable<System.Transactions.IsolationLevel> isolationLevel = null) { }
     }
@@ -1128,13 +1131,13 @@ namespace NServiceBus
     }
     public class static SettingsExtensions
     {
-        public static NServiceBus.Routing.EndpointInstance EndpointInstanceName(this NServiceBus.Settings.ReadOnlySettings settings) { }
         public static string EndpointName(this NServiceBus.Settings.ReadOnlySettings settings) { }
         public static System.Collections.Generic.IList<System.Type> GetAvailableTypes(this NServiceBus.Settings.ReadOnlySettings settings) { }
         public static T GetConfigSection<T>(this NServiceBus.Settings.ReadOnlySettings settings)
             where T :  class, new () { }
         public static string InstanceSpecificQueue(this NServiceBus.Settings.ReadOnlySettings settings) { }
         public static string LocalAddress(this NServiceBus.Settings.ReadOnlySettings settings) { }
+        public static NServiceBus.LogicalAddress LogicalAddress(this NServiceBus.Settings.ReadOnlySettings settings) { }
     }
     [System.ObsoleteAttribute("Use `SettingsExtensions` instead. Will be removed in version 7.0.0.", true)]
     public class static SettingsExtentions { }
