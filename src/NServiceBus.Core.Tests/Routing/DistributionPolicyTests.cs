@@ -11,7 +11,7 @@
         {
             IDistributionPolicy policy = new DistributionPolicy();
 
-            var result = policy.GetDistributionStrategy("SomeEndpoint");
+            var result = policy.GetDistributionStrategy("SomeEndpoint", DistributionStrategyScope.Sends);
 
             Assert.That(result, Is.TypeOf<SingleInstanceRoundRobinDistributionStrategy>());
         }
@@ -20,11 +20,11 @@
         public void When_strategy_configured_for_endpoint_should_use_configured_strategy()
         {
             var p = new DistributionPolicy();
-            var configuredStrategy = new FakeDistributionStrategy();
-            p.SetDistributionStrategy("SomeEndpoint", configuredStrategy);
+            var configuredStrategy = new FakeDistributionStrategy("SomeEndpoint");
+            p.SetDistributionStrategy(configuredStrategy, DistributionStrategyScope.Sends);
 
             IDistributionPolicy policy = p;
-            var result = policy.GetDistributionStrategy("SomeEndpoint");
+            var result = policy.GetDistributionStrategy("SomeEndpoint", DistributionStrategyScope.Sends);
 
             Assert.That(result, Is.EqualTo(configuredStrategy));
         }
@@ -33,27 +33,26 @@
         public void When_multiple_strategies_configured_endpoint_should_use_last_configured_strategy()
         {
             var p = new DistributionPolicy();
-            var strategy = new FakeDistributionStrategy();
-            p.SetDistributionStrategy("SomeEndpoint", new FakeDistributionStrategy());
-            p.SetDistributionStrategy("SomeEndpoint", new FakeDistributionStrategy());
-            p.SetDistributionStrategy("SomeEndpoint", strategy);
+            var strategy = new FakeDistributionStrategy("SomeEndpoint");
+            p.SetDistributionStrategy(new FakeDistributionStrategy("SomeEndpoint"), DistributionStrategyScope.Sends);
+            p.SetDistributionStrategy(strategy, DistributionStrategyScope.Sends);
+            p.SetDistributionStrategy(new FakeDistributionStrategy("SomeEndpoint"), DistributionStrategyScope.Publishes);
 
             IDistributionPolicy policy = p;
-            var result = policy.GetDistributionStrategy("SomeEndpoint");
+            var result = policy.GetDistributionStrategy("SomeEndpoint", DistributionStrategyScope.Sends);
 
             Assert.That(result, Is.EqualTo(strategy));
         }
 
         class FakeDistributionStrategy : DistributionStrategy
         {
-            public override EndpointInstance SelectReceiver(EndpointInstance[] allInstances)
+            public FakeDistributionStrategy(string endpoint) : base(endpoint)
             {
-                return null;
             }
 
-            public override string SelectSubscriber(string[] subscriberAddresses)
+            public override string SelectReceiver(string[] receiverAddresses)
             {
-                throw new System.NotImplementedException();
+                return null;
             }
         }
     }

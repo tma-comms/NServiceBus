@@ -1,5 +1,6 @@
 namespace NServiceBus
 {
+    using System;
     using System.Collections.Concurrent;
     using Routing;
 
@@ -11,18 +12,37 @@ namespace NServiceBus
         /// <summary>
         /// Sets the distribution strategy for a given endpoint.
         /// </summary>
-        /// <param name="endpointName">Endpoint name.</param>
         /// <param name="distributionStrategy">Distribution strategy to be used.</param>
-        public void SetDistributionStrategy(string endpointName, DistributionStrategy distributionStrategy)
+        /// <param name="scope">Defines whether to use the specific strategy for distribute sends or publishes.</param>
+        public void SetDistributionStrategy(DistributionStrategy distributionStrategy, DistributionStrategyScope scope)
         {
-            Guard.AgainstNullAndEmpty(nameof(endpointName), endpointName);
             Guard.AgainstNull(nameof(distributionStrategy), distributionStrategy);
 
-            configuredStrategies[endpointName] = distributionStrategy;
+            switch (scope)
+            {
+                case DistributionStrategyScope.Publishes:
+                    configuredPublishStrategies[distributionStrategy.Endpoint] = distributionStrategy;
+                    break;
+                case DistributionStrategyScope.Sends:
+                    configuredSendStrategies[distributionStrategy.Endpoint] = distributionStrategy;
+                    break;
+            }
         }
 
-        DistributionStrategy IDistributionPolicy.GetDistributionStrategy(string endpointName) => configuredStrategies.GetOrAdd(endpointName, key => new SingleInstanceRoundRobinDistributionStrategy());
+        DistributionStrategy IDistributionPolicy.GetDistributionStrategy(string endpointName, DistributionStrategyScope scope)
+        {
+            switch (scope)
+            {
+                case DistributionStrategyScope.Publishes:
+                    return configuredPublishStrategies.GetOrAdd(endpointName, key => new SingleInstanceRoundRobinDistributionStrategy(key));
+                case DistributionStrategyScope.Sends:
+                    return configuredSendStrategies.GetOrAdd(endpointName, key => new SingleInstanceRoundRobinDistributionStrategy(key));
+                default:
+                    throw new ArgumentException($"{nameof(DistributionStrategyScope)} value {scope} is not handled by the policy.");
+            }
+        }
 
-        ConcurrentDictionary<string, DistributionStrategy> configuredStrategies = new ConcurrentDictionary<string, DistributionStrategy>();
+        ConcurrentDictionary<string, DistributionStrategy> configuredSendStrategies = new ConcurrentDictionary<string, DistributionStrategy>();
+        ConcurrentDictionary<string, DistributionStrategy> configuredPublishStrategies = new ConcurrentDictionary<string, DistributionStrategy>();
     }
 }

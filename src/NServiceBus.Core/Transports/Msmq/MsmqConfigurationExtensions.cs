@@ -46,11 +46,11 @@ namespace NServiceBus
         /// Sets a distribution strategy for a given endpoint.
         /// </summary>
         /// <param name="config">Config object.</param>
-        /// <param name="endpointName">The name of the logical endpoint the given strategy should apply to.</param>
         /// <param name="distributionStrategy">The instance of a distribution strategy.</param>
-        public static void SetMessageDistributionStrategy(this RoutingSettings<MsmqTransport> config, string endpointName, DistributionStrategy distributionStrategy)
+        /// <param name="scope">The scope of the given distribution strategy.</param>
+        public static void SetMessageDistributionStrategy(this RoutingSettings<MsmqTransport> config, DistributionStrategy distributionStrategy, DistributionStrategyScope scope)
         {
-            config.Settings.GetOrCreate<DistributionPolicy>().SetDistributionStrategy(endpointName, distributionStrategy);
+            config.Settings.GetOrCreate<DistributionPolicy>().SetDistributionStrategy(distributionStrategy, scope);
         }
 
         /// <summary>

@@ -6,42 +6,37 @@ namespace NServiceBus
 
     class SpecificInstanceDistributionPolicy : IDistributionPolicy
     {
-        readonly string specificInstance;
+         string specificInstanceAddress;
 
-        public SpecificInstanceDistributionPolicy(string specificInstance)
+        //TODO parameter!
+        public SpecificInstanceDistributionPolicy(string specificInstanceAddress)
         {
-            this.specificInstance = specificInstance;
+            this.specificInstanceAddress = specificInstanceAddress;
         }
 
-        public DistributionStrategy GetDistributionStrategy(string endpointName)
+        public DistributionStrategy GetDistributionStrategy(string endpointName, DistributionStrategyScope scope)
         {
-            return new SpecificInstanceDistributionStrategy(specificInstance);
+            return new SpecificInstanceDistributionStrategy(endpointName, specificInstanceAddress);
         }
 
         class SpecificInstanceDistributionStrategy : DistributionStrategy
         {
-            public SpecificInstanceDistributionStrategy(string specificInstance)
+            public SpecificInstanceDistributionStrategy(string endpointName, string specificInstanceAddress) : base(endpointName)
             {
-                this.specificInstance = specificInstance;
+                this.specificInstanceAddress = specificInstanceAddress;
             }
 
-            public override EndpointInstance SelectReceiver(EndpointInstance[] allInstances)
+            public override string SelectReceiver(string[] receiverAddresses)
             {
-                var target = allInstances.FirstOrDefault(t => t.Discriminator == specificInstance);
+                var target = receiverAddresses.FirstOrDefault(t => t == specificInstanceAddress);
                 if (target == null)
                 {
-                    throw new Exception($"Specified instance {specificInstance} has not been configured in the routing tables.");
+                    throw new Exception($"Specified instance {specificInstanceAddress} has not been configured in the routing tables.");
                 }
                 return target;
             }
 
-            public override string SelectSubscriber(string[] subscriberAddresses)
-            {
-                // This strategy can't be used for publishes
-                throw new NotSupportedException();
-            }
-
-            string specificInstance;
+            string specificInstanceAddress;
         }
     }
 }
