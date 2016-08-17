@@ -6,37 +6,44 @@ namespace NServiceBus
 
     class SpecificInstanceDistributionPolicy : IDistributionPolicy
     {
-         string specificInstanceAddress;
-
-        //TODO parameter!
-        public SpecificInstanceDistributionPolicy(string specificInstanceAddress)
+        public SpecificInstanceDistributionPolicy(string discriminator, Func<EndpointInstance, string> transportAddressTranslation)
         {
-            this.specificInstanceAddress = specificInstanceAddress;
+            this.discriminator = discriminator;
+            this.transportAddressTranslation = transportAddressTranslation;
         }
 
         public DistributionStrategy GetDistributionStrategy(string endpointName, DistributionStrategyScope scope)
         {
-            return new SpecificInstanceDistributionStrategy(endpointName, specificInstanceAddress);
+            return new SpecificInstanceDistributionStrategy(
+                new EndpointInstance(endpointName, discriminator),
+                transportAddressTranslation);
         }
+
+        readonly Func<EndpointInstance, string> transportAddressTranslation;
+        string discriminator;
 
         class SpecificInstanceDistributionStrategy : DistributionStrategy
         {
-            public SpecificInstanceDistributionStrategy(string endpointName, string specificInstanceAddress) : base(endpointName)
+            public SpecificInstanceDistributionStrategy(EndpointInstance instance, Func<EndpointInstance, string> transportAddressTranslation) : base(instance.Endpoint)
             {
-                this.specificInstanceAddress = specificInstanceAddress;
+                this.instance = instance;
+                this.transportAddressTranslation = transportAddressTranslation;
             }
 
             public override string SelectReceiver(string[] receiverAddresses)
             {
-                var target = receiverAddresses.FirstOrDefault(t => t == specificInstanceAddress);
+                var instanceAddress = transportAddressTranslation(instance);
+                var target = receiverAddresses.FirstOrDefault(t => t == instanceAddress);
                 if (target == null)
                 {
-                    throw new Exception($"Specified instance {specificInstanceAddress} has not been configured in the routing tables.");
+                    throw new Exception($"Specified instance with discriminator {instance.Discriminator} has not been configured in the routing tables.");
                 }
                 return target;
             }
 
-            string specificInstanceAddress;
+            readonly Func<EndpointInstance, string> transportAddressTranslation;
+
+            EndpointInstance instance;
         }
     }
 }
